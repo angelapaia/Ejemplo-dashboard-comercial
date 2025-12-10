@@ -1,96 +1,94 @@
 import React from 'react';
-import { CommercialStats } from '../types';
-import { Trophy, TrendingUp, Medal } from 'lucide-react';
+import { CommercialMetric } from '../types';
+import { formatCurrency, formatPercentage } from '../utils/formatters';
+import { Trophy, Medal } from 'lucide-react';
 
 interface PodiumProps {
-  top3: CommercialStats[];
+  metrics: CommercialMetric[];
 }
 
-const PodiumItem: React.FC<{ 
-  stats: CommercialStats; 
-  rank: 1 | 2 | 3; 
-}> = ({ stats, rank }) => {
-  
-  let heightClass = '';
-  let colorClass = '';
-  let scaleClass = '';
-  let borderClass = '';
-  let orderClass = '';
+export const Podium: React.FC<PodiumProps> = ({ metrics }) => {
+  const top3 = metrics.slice(0, 3);
 
-  // Visual configuration based on rank - Neutral/Premium look
-  if (rank === 1) {
-    heightClass = 'h-64';
-    colorClass = 'bg-gradient-to-b from-yellow-600/20 to-neutral-900'; // Gold tint
-    borderClass = 'border-yellow-600/50';
-    scaleClass = 'scale-110 z-10';
-    orderClass = 'order-2'; 
-  } else if (rank === 2) {
-    heightClass = 'h-48';
-    colorClass = 'bg-gradient-to-b from-neutral-400/20 to-neutral-900'; // Silver tint
-    borderClass = 'border-neutral-400/50';
-    scaleClass = 'scale-100 z-0';
-    orderClass = 'order-1';
-  } else {
-    heightClass = 'h-40';
-    colorClass = 'bg-gradient-to-b from-orange-700/20 to-neutral-900'; // Bronze tint
-    borderClass = 'border-orange-700/50';
-    scaleClass = 'scale-95 z-0';
-    orderClass = 'order-3'; 
+  // Need exactly 3 for the layout, fill with empty if needed
+  while (top3.length < 3) {
+    top3.push({ commercial: 'N/A', totalRevenue: 0, wonCount: 0, lostCount: 0, winRate: 0, avgDaysToClose: 0, openDeals: [], deals: [] });
   }
 
-  const formattedRevenue = new Intl.NumberFormat('es-ES', { 
-    style: 'currency', 
-    currency: 'EUR',
-    maximumFractionDigits: 0
-  }).format(stats.totalRevenue);
+  // Reorder for visual podium: 2nd, 1st, 3rd (Left, Center, Right)
+  const [first, second, third] = top3;
+  const orderedPodium = [second, first, third];
 
   return (
-    <div className={`flex flex-col items-center justify-end ${orderClass} ${scaleClass} transition-all duration-500 mx-2`}>
-      {/* Avatar / Info Bubble */}
-      <div className="mb-4 flex flex-col items-center animate-fade-in-up">
-        <div className="relative">
-             <div className={`w-20 h-20 rounded-full border-2 ${rank === 1 ? 'border-yellow-500' : rank === 2 ? 'border-neutral-400' : 'border-orange-600'} overflow-hidden shadow-2xl bg-black`}>
-                <img 
-                    src={`https://api.dicebear.com/7.x/initials/svg?seed=${stats.name}&backgroundColor=000000&textColor=ffffff`} 
-                    alt={stats.name} 
-                    className="w-full h-full object-cover"
-                />
+    <div className="glass-panel p-6 h-full flex flex-col">
+      <h2 className="text-xl font-bold mb-8 text-gray-300 flex items-center gap-2">
+        <Trophy className="text-yellow-500" /> PODIO LÍDERES
+      </h2>
+
+      <div className="flex-1 flex items-end justify-center gap-4 pb-4">
+        {orderedPodium.map((metric, index) => {
+          // Determine rank based on position in ordered array [2nd, 1st, 3rd]
+          // index 0 = 2nd Place (Silver)
+          // index 1 = 1st Place (Gold)
+          // index 2 = 3rd Place (Bronze)
+
+          let rank = 0;
+          let height = 'h-64';
+          let color = '';
+          let glow = '';
+          let icon = null;
+          let scale = '';
+
+          if (index === 1) { // 1st
+            rank = 1;
+            height = 'h-80';
+            color = 'bg-gradient-to-t from-yellow-600/50 to-yellow-400/20 border-yellow-500/50';
+            glow = 'shadow-[0_0_50px_-12px_rgba(234,179,8,0.5)]';
+            icon = <Trophy className="w-12 h-12 text-yellow-400 mb-2 drop-shadow-lg" />;
+            scale = 'z-10 transform -translate-y-4';
+          } else if (index === 0) { // 2nd
+            rank = 2;
+            height = 'h-64';
+            color = 'bg-gradient-to-t from-gray-500/50 to-gray-300/20 border-gray-400/50';
+            glow = 'shadow-[0_0_30px_-12px_rgba(156,163,175,0.5)]';
+            icon = <Medal className="w-8 h-8 text-gray-300 mb-2" />;
+          } else { // 3rd
+            rank = 3;
+            height = 'h-56';
+            color = 'bg-gradient-to-t from-orange-800/50 to-orange-600/20 border-orange-700/50';
+            glow = 'shadow-[0_0_30px_-12px_rgba(194,65,12,0.5)]';
+            icon = <Medal className="w-8 h-8 text-orange-400 mb-2" />;
+          }
+
+          if (metric.commercial === 'N/A') return <div key={index} className="w-1/3"></div>;
+
+          return (
+            <div key={metric.commercial} className={`relative w-1/3 flex flex-col justify-end ${scale}`}>
+              {/* Avatar Placeholder / Info Card */}
+              <div className="mb-3 text-center animate-fade-in">
+                {icon}
+                <div className="font-bold text-lg text-white truncate px-2">{metric.commercial}</div>
+                <div className="text-2xl font-black text-white drop-shadow-md">
+                  {formatCurrency(metric.totalRevenue)}
+                </div>
+                <div className="text-xs text-gray-400 mt-1 space-y-1">
+                  <div className="bg-white/10 rounded px-2 py-0.5 inline-block">
+                    {metric.wonCount} ventas
+                  </div>
+                </div>
+              </div>
+
+              {/* Bar */}
+              <div className={`w-full ${height} rounded-t-xl border-t border-x ${color} ${glow} relative overflow-hidden group transition-all duration-500`}>
+                <div className="absolute bottom-0 w-full text-center py-4 bg-black/20 backdrop-blur-sm">
+                  <div className="text-3xl font-bold opacity-30">{rank}º</div>
+                  <div className="text-sm font-semibold text-white/80">Win Rate: {formatPercentage(metric.winRate)}</div>
+                </div>
+              </div>
             </div>
-            <div className={`absolute -top-3 -right-3 ${rank === 1 ? 'bg-yellow-500 text-black' : 'bg-white text-black'} font-bold rounded-full w-8 h-8 flex items-center justify-center shadow-md`}>
-                {rank}
-            </div>
-        </div>
-        
-        <h3 className="mt-2 text-xl font-bold text-white text-center drop-shadow-md">{stats.name}</h3>
-        <div className="flex flex-col items-center bg-black/60 rounded-lg px-4 py-2 mt-2 border border-neutral-800 backdrop-blur-sm">
-            <span className="text-2xl font-light tracking-tight text-white">{formattedRevenue}</span>
-            <div className="flex gap-3 text-xs text-neutral-400 mt-1 uppercase tracking-wide">
-                <span className="flex items-center gap-1"><Trophy size={12} className="text-yellow-600"/> {stats.wonCount} vtas</span>
-                <span className="flex items-center gap-1"><TrendingUp size={12} className="text-green-500"/> {stats.winRate}%</span>
-            </div>
-        </div>
+          );
+        })}
       </div>
-
-      {/* The Block */}
-      <div className={`w-full min-w-[140px] rounded-t-lg shadow-lg flex items-end justify-center pb-4 ${heightClass} ${colorClass} border-t ${borderClass} relative backdrop-blur-sm`}>
-        <Medal size={rank === 1 ? 64 : 48} className={`opacity-10 ${rank === 1 ? 'text-yellow-500' : 'text-white'}`} />
-      </div>
-    </div>
-  );
-};
-
-export const Podium: React.FC<PodiumProps> = ({ top3 }) => {
-  const podiumData = [
-    top3[0] || { name: '-', totalRevenue: 0, wonCount: 0, lostCount: 0, winRate: 0, avgDaysToClose: 0 },
-    top3[1] || { name: '-', totalRevenue: 0, wonCount: 0, lostCount: 0, winRate: 0, avgDaysToClose: 0 },
-    top3[2] || { name: '-', totalRevenue: 0, wonCount: 0, lostCount: 0, winRate: 0, avgDaysToClose: 0 },
-  ];
-
-  return (
-    <div className="flex items-end justify-center h-full pb-6 px-4">
-      <PodiumItem stats={podiumData[1]} rank={2} />
-      <PodiumItem stats={podiumData[0]} rank={1} />
-      <PodiumItem stats={podiumData[2]} rank={3} />
     </div>
   );
 };
