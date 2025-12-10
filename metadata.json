@@ -1,0 +1,5 @@
+{
+  "name": "Arena de Comerciales",
+  "description": "Real-time sales dashboard for TV display, connecting to Google Sheets to show rankings, podiums, and recent sales.",
+  "requestFramePermissions": []
+}
